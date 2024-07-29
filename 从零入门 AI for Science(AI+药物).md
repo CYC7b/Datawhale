@@ -89,5 +89,6 @@
   了解生物作用的机理与背景有助于设计更好的AI模型，来辅助siRNA的设计与优化。
   
 **RNAi作用机制**
+
   生物体内，RNAi首先将较长的双链RNA加工和切割成 siRNA，通常在每条链的3'末端带有2个核苷酸突出端。负责这种加工的酶是一种RNase III样酶，称为Dicer。形成后，siRNA与一种称为RNA诱导的沉默复合物（RNAinduced silencing complex, RISC）的多蛋白组分复合物结合。在RISC复合物中，siRNA链被分离，具有更稳定的5′末端的链通常被整合到活性RISC复合物中。然后，反义单链siRNA组分引导并排列在靶mRNA上，并通过催化RISC蛋白（Argonaute family（Ago2））的作用，mRNA被切割，即对应基因被沉默，表达蛋白能力削弱。
 </details>
