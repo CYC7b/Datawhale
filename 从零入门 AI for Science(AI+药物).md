@@ -344,6 +344,6 @@ gbm = lgb.train(
     callbacks=[print_validation_result],
 )
 ```
-可一键运行的完整baseline见下
+可一键运行的完整baseline见lgb.ipynb
 
 </details>
