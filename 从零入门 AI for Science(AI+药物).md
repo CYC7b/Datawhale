@@ -78,21 +78,272 @@
   ```
 
 最终的评分结合了MAE和区间内MAE的反比例值，以及F1得分。MAE和Range MAE越小，1减去它们的比值越大，表明误差小，模型表现好。F1得分高则表示模型分类性能好。最终评分是这几个值的加权平均数，权重各占50%。
-
-### 3.相关生物背景知识
-
-**AI与制药**
-
-  长期以来，药物研发领域流传着“双十定律”，即从新药研发开始到产品获批上市，平均耗时十年，投入成本约十亿美元。所幸的是，大数据与人工智能（Artificial Intelligence，AI）的兴起，有望新药的研发走出这个“双十”困局，使药物研发的进度得以加速，成功率得以提高，同时成本也得以大大降低。如提升候选药物品质（改善靶点确证和先导分子优化流程、调整药物用途），优化临床试验设计（基于生物标志物的筛查、患者分级）等。AI制药企业英矽智能通过生成式人工智能筛选靶点并设计的小分子TNIK抑制剂候选药物INS018_055已完成Ⅱ期临床试验首例患者给药，给数以百万计特发性肺纤维化（IPF）病人群带去福音，其从靶点发现到人体临床开启仅用了18个月。AI辅助制药与生命科学研究已经成为一种新的范式。
   
-  小干扰RNA (small interfering RNA,siRNA)生物学最重要生物技术之一，是发现能够通过一种被称为RNA干扰(RNA interference, RNAi)的现象来调节基因的表达。siRNA可用作研究体内和体外单基因功能的工具，是一类有吸引力的新型疗法，特别是针对治疗癌症和其他疾病的不可成药靶点。2018年，在结合靶向递送系统和经过高级化学修饰之后，全球首个siRNA药物Patisiran获批上市。如今，越来越多siRNA逐渐进入试验阶段甚至步入临床，这标志着临床领域实现精准医疗将不再只是一句口号，最终惠及更多患者。
-  了解生物作用的机理与背景有助于设计更好的AI模型，来辅助siRNA的设计与优化。
-  
-**RNAi作用机制**
 
-  生物体内，RNAi首先将较长的双链RNA加工和切割成 siRNA，通常在每条链的3'末端带有2个核苷酸突出端。负责这种加工的酶是一种RNase III样酶，称为Dicer。形成后，siRNA与一种称为RNA诱导的沉默复合物（RNAinduced silencing complex, RISC）的多蛋白组分复合物结合。在RISC复合物中，siRNA链被分离，具有更稳定的5′末端的链通常被整合到活性RISC复合物中。然后，反义单链siRNA组分引导并排列在靶mRNA上，并通过催化RISC蛋白（Argonaute family（Ago2））的作用，mRNA被切割，即对应基因被沉默，表达蛋白能力削弱。
+</details>
 
-  ![image](https://github.com/user-attachments/assets/ccd8bd2b-a039-4365-840b-1a36991750d3)
+<details>
+  <summary>Task2：深入理解赛题，入门RNN和特征工程</summary>
+  本任务我们对官方的baseline进行分析解读，之后介绍RNN相关的基础知识，包括其适用范围和问题。随后，我们从特征工程构建的角度来重新分析赛题数据，并将其和lightgbm结合，最终给出一个更好的baseline。
+
+  ### 官方baseline分析
   
+  在baseline中，我们只用到了siRNA_antisense_seq和modified_siRNA_antisense_seq_list，它们都是由一串符号标记的序列，我们希望的是把这些序列特征能够输入RNN模型，因此需要对其做一定处理。在SiRNAModel类的forward方法中，展示了在得到序列特征的tensor表示后的处理步骤：
+  
+  ```python
+  def forward(self, x):
+    # 将输入序列传入嵌入层
+    embedded = [self.embedding(seq) for seq in x]
+    outputs = []
+    ...
+  ```
+
+  那么这里的输入x是什么呢？我们可以通过train_loader来查看一个batch内的输入情况，这里的inputs和上面的x是一个东西。我们首先发现inputs包含两个元素，它们分别对应的是前面提到的两个使用的特征，每个元素的尺寸都是64*25，64代表batch的大小，25代表序列的长度。这里我们可以从inputs[0][0]看到每一行数据的siRNA_antisense_seq被向量化后的情况，这个例子中我们发现前面的7位是非零数，表示其序列编码后每一位的唯一标识；而后面都是0，这是因为RNN模型的输入需要每个样本的长度一致，因此我们需要事先算出一个所有序列编码后的最大长度，然后补0。
+  
+  ![image](https://github.com/user-attachments/assets/992c87e2-2dc4-4ddc-876c-1998608773ef)
+
+  那么我们怎么能得到这个唯一标识呢？我们首先需要把序列给进行分词，siRNA_antisense_seq的分词策略是3个一组（GenomicTokenizer的ngram和stride都取3）进行token拆分，比如AGCCGAGAU会被分为[AGC, CGA, GAU]，而modified_siRNA_antisense_seq_list会进行按照空格分词（因为它本身已经根据空格分好了）。由此我们可以从整个数据集构建出一个词汇表，他负责token到唯一标识（索引）的映射：
+
+  ```python
+  # 创建词汇表
+  all_tokens = []
+  for col in columns:
+      for seq in train_data[col]:
+          if ' ' in seq:  # 修饰过的序列
+              all_tokens.extend(seq.split())
+          else:
+              all_tokens.extend(tokenizer.tokenize(seq))
+  vocab = GenomicVocab.create(all_tokens, max_vocab=10000, min_freq=1)
+  ```
+
+  有了这个词汇表，我们就可以
+  - 来获得序列的最大长度
+  
+  ```python
+  max_len = max(max(len(seq.split()) if ' ' in seq else len(tokenizer.tokenize(seq)) 
+                    for seq in train_data[col]) for col in columns)
+  ```
+
+  - 在loader获取样本的时候把token转为索引
+
+  ```python
+  def __getitem__(self, idx):
+      # 获取数据集中的第idx个样本
+      row = self.df.iloc[idx]  # 获取第idx行数据
+      
+      # 对每一列进行分词和编码
+      seqs = [self.tokenize_and_encode(row[col]) for col in self.columns]
+      if self.is_test:
+          # 仅返回编码后的序列（测试集模式）
+          return seqs
+      else:
+          # 获取目标值并转换为张量（仅在非测试集模式下）
+          target = torch.tensor(row['mRNA_remaining_pct'], dtype=torch.float)
+          # 返回编码后的序列和目标值
+          return seqs, target
+  
+  def tokenize_and_encode(self, seq):
+      if ' ' in seq:  # 修饰过的序列
+          tokens = seq.split()  # 按空格分词
+      else:  # 常规序列
+          tokens = self.tokenizer.tokenize(seq)  # 使用分词器分词
+      
+      # 将token转换为索引，未知token使用0（<pad>）
+      encoded = [self.vocab.stoi.get(token, 0) for token in tokens]
+      # 将序列填充到最大长度
+      padded = encoded + [0] * (self.max_len - len(encoded))
+      # 返回张量格式的序列
+      return torch.tensor(padded[:self.max_len], dtype=torch.long)
+  ```
+
+  此时，对于某一行数据，其两个特征分别为AGCCUUAGCACA和u u g g u u Cf c，假设整个数据集对应token编码后序列的最大长度为10，那么得到的特征就可能是
+  - [25, 38, 25, 24, 0, 0, 0, 0, 0, 0]
+  - [65, 65, 63, 63, 65, 65, 74, 50, 0, 0]
+  那么假设batch的大小为16，此时forword函数的x就会是两个列表，每个列表的tensor尺寸为16 * 10
+
+  ### RNN模型分析
+  
+  我们在上一小节已经得到了数据的张量化表示，此时就要把它输入模型了。
+
+```python
+  class SiRNAModel(nn.Module):
+      def __init__(self, vocab_size, embed_dim=200, hidden_dim=256, n_layers=3, dropout=0.5):
+          super(SiRNAModel, self).__init__()
+          
+          # 初始化嵌入层
+          self.embedding = nn.Embedding(vocab_size, embed_dim, padding_idx=0)
+          # 初始化GRU层
+          self.gru = nn.GRU(embed_dim, hidden_dim, n_layers, bidirectional=True, batch_first=True, dropout=dropout)
+          # 初始化全连接层
+          self.fc = nn.Linear(hidden_dim * 4, 1)  # hidden_dim * 4 因为GRU是双向的，有n_layers层
+          # 初始化Dropout层
+          self.dropout = nn.Dropout(dropout)
+      
+      def forward(self, x):
+          # 将输入序列传入嵌入层
+          embedded = [self.embedding(seq) for seq in x]
+          outputs = []
+          
+          # 对每个嵌入的序列进行处理
+          for embed in embedded:
+              x, _ = self.gru(embed)  # 传入GRU层
+              x = self.dropout(x[:, -1, :])  # 取最后一个隐藏状态，并进行dropout处理
+              outputs.append(x)
+          
+          # 将所有序列的输出拼接起来
+          x = torch.cat(outputs, dim=1)
+          # 传入全连接层
+          x = self.fc(x)
+          # 返回结果
+          return x.squeeze()
+```
+
+  我们首先第一步将得到的索引进行了embedding，token的embedding是将离散的符号（如单词、字符、或基因序列片段）映射到连续的向量空间的过程。这个过程通过将高维的稀疏表示（如独热编码）转换为低维的密集向量表示，使得相似的符号在向量空间中距离更近。此时，embed的尺寸会从BatchSize * Length成为BatchSize * Length * EmbeddingSize，此处EmbeddingSize即embed_dim=200。
+RNN，全称为递归神经网络（Recurrent Neural Network），是一种人工智能模型，特别擅长处理序列数据。它和普通的神经网络不同，因为它能够记住以前的数据，并利用这些记忆来处理当前的数据。想象你在读一本书。你在阅读每一页时，不仅仅是单独理解这一页的内容，还会记住前面的情节和信息。这些记忆帮助你理解当前的情节并预测接下来的发展。这就是 RNN 的工作方式。假设你要预测一个句子中下一个单词是什么。例如，句子是：“我今天早上吃了一个”。RNN 会根据之前看到的单词（“我今天早上吃了一个”），预测下一个可能是“苹果”或“香蕉”等。它记住了之前的单词，并利用这些信息来做出预测。
+- RNN 在处理序列数据时具有一定的局限性：
+  - 长期依赖问题：RNN 难以记住和利用很久以前的信息。这是因为在长序列中，随着时间步的增加，早期的信息会逐渐被后来的信息覆盖或淡化。
+  - 梯度消失和爆炸问题：在反向传播过程中，RNN 的梯度可能会变得非常小（梯度消失）或非常大（梯度爆炸），这会导致训练过程变得困难。
+- LSTM 的改进
+  - LSTM 通过引入一个复杂的单元结构来解决 RNN 的局限性。LSTM 单元包含三个门（输入门、遗忘门和输出门）和一个记忆单元（细胞状态），这些门和状态共同作用，使 LSTM 能够更好地捕捉长期依赖关系。
+    1. 输入门：决定当前输入的信息有多少会被写入记忆单元。
+    2. 遗忘门：决定记忆单元中有多少信息会被遗忘。
+    3. 输出门：决定记忆单元的哪些部分会作为输出。
+  - 通过这些门的控制，LSTM 可以选择性地保留或遗忘信息，从而有效地解决长期依赖和梯度消失的问题。
+- GRU 的改进
+  - GRU 是 LSTM 的一种简化版本，它通过合并一些门来简化结构，同时仍然保留了解决 RNN 局限性的能力。GRU 仅有两个门：更新门和重置门。
+    1. 更新门：决定前一个时刻的状态和当前输入信息的结合程度。
+    2. 重置门：决定忘记多少之前的信息。
+  - GRU 的结构更简单，计算效率更高，同时在许多应用中表现出与 LSTM 类似的性能。
+我们在pytorch的GRU文档中可以找到对应可选的参数信息，我们需要特别关注的参数如下，它们决定了模型的输入输出的张量维度
+  - input_size（200）
+  - hidden_size（256）
+  - bidirectional（True）
+  
+假设输入的BatchSize为16，序列最大长度为10，即x尺寸为16 * 10 * 200，那么其输出的张量尺寸为 16 * 10 * (256 * 2)。
+在从GRU模型输出后，x = self.dropout(x[:, -1, :])使得输出变为了BatchSize * (hidden_dim * 2)，此处取了序列最后一个位置的输出数据（注意RNN网络的记忆性），这里的2是因为bidirectional参数为True，随后x = torch.cat(outputs, dim=1)指定在第二个维度拼接后，通过全连接层再映射为标量，因此最后经过squeeze（去除维数为1的维度）后得到的张量尺寸为批大小，从而可以后续和target值进行loss计算，迭代模型。
+
+  ### 数据的特征工程
+
+  在提交官方baseline后，我们会发现得分并不好，这一方面原因可能在于数据用的特征还较为简单，序列特征的构造较为粗糙，再加上对于深度学习的RNN模型而言数据量可能还不太充足的因素，这是可以预见的output。下面我们介绍一种把序列特征的问题转化为表格问题的方法，并介绍在表格数据上如何做特征工程。
+- 处理类别型变量
+如何知道一个变量是类别型的呢，只需看下其值的分布，或者唯一值的个数
+
+```python
+df.gene_target_symbol_name.nunique()
+```
+```python
+df.gene_target_symbol_name.value_counts()
+```
+如果相较于数据的总行数很少，那么其很可能就是类别变量了，比如gene_target_symbol_name。此时，我们可以使用get_dummie函数来实现one-hot特征的构造.
+```python
+# 如果有40个类别，那么会产生40列，如果第i行属于第j个类别，那么第j列第i行就是1，否则为0
+df_gene_target_symbol_name = pd.get_dummies(df.gene_target_symbol_name)
+df_gene_target_symbol_name.columns = [
+    f"feat_gene_target_symbol_name_{c}" for c in df_gene_target_symbol_name.columns
+]
+```
+
+- 可能的时间特征构造
+在数据观察的时候发现，siRNA_duplex_id的编码方式很有意思，其格式为AD-1810676.1，我们猜测AD是某个类别，后面的.1是版本，当中的可能是按照一定顺序的序列号，因此可以构造如下特征
+
+```python
+siRNA_duplex_id_values = df.siRNA_duplex_id.str.split("-|\.").str[1].astype("int")
+```
+
+- 包含某些单词
+  
+```python
+df_cell_line_donor = pd.get_dummies(df.cell_line_donor)
+df_cell_line_donor.columns = [
+    f"feat_cell_line_donor_{c}" for c in df_cell_line_donor.columns
+]
+# 包含Hepatocytes
+df_cell_line_donor["feat_cell_line_donor_hepatocytes"] = (
+    (df.cell_line_donor.str.contains("Hepatocytes")).fillna(False).astype("int")
+)
+# 包含Cells
+df_cell_line_donor["feat_cell_line_donor_cells"] = (
+    df.cell_line_donor.str.contains("Cells").fillna(False).astype("int")
+)
+```
+
+- 根据序列模式提取特征
+假设siRNA的序列为ACGCA...，此时我们可以根据上一个task中提到的rna背景知识，对碱基的模式进行特征构造
+```python
+def siRNA_feat_builder(s: pd.Series, anti: bool = False):
+    name = "anti" if anti else "sense"
+    df = s.to_frame()
+    # 序列长度
+    df[f"feat_siRNA_{name}_seq_len"] = s.str.len()
+    for pos in [0, -1]:
+        for c in list("AUGC"):
+            # 第一个和最后一个是否是A/U/G/C
+            df[f"feat_siRNA_{name}_seq_{c}_{'front' if pos == 0 else 'back'}"] = (
+                s.str[pos] == c
+            )
+    # 是否已某一对碱基开头和某一对碱基结尾
+    df[f"feat_siRNA_{name}_seq_pattern_1"] = s.str.startswith("AA") & s.str.endswith(
+        "UU"
+    )
+    df[f"feat_siRNA_{name}_seq_pattern_2"] = s.str.startswith("GA") & s.str.endswith(
+        "UU"
+    )
+    df[f"feat_siRNA_{name}_seq_pattern_3"] = s.str.startswith("CA") & s.str.endswith(
+        "UU"
+    )
+    df[f"feat_siRNA_{name}_seq_pattern_4"] = s.str.startswith("UA") & s.str.endswith(
+        "UU"
+    )
+    df[f"feat_siRNA_{name}_seq_pattern_5"] = s.str.startswith("UU") & s.str.endswith(
+        "AA"
+    )
+    df[f"feat_siRNA_{name}_seq_pattern_6"] = s.str.startswith("UU") & s.str.endswith(
+        "GA"
+    )
+    df[f"feat_siRNA_{name}_seq_pattern_7"] = s.str.startswith("UU") & s.str.endswith(
+        "CA"
+    )
+    df[f"feat_siRNA_{name}_seq_pattern_8"] = s.str.startswith("UU") & s.str.endswith(
+        "UA"
+    )
+    # 第二位和倒数第二位是否为A
+    df[f"feat_siRNA_{name}_seq_pattern_9"] = s.str[1] == "A"
+    df[f"feat_siRNA_{name}_seq_pattern_10"] = s.str[-2] == "A"
+    # GC占整体长度的比例
+    df[f"feat_siRNA_{name}_seq_pattern_GC_frac"] = (
+        s.str.contains("G") + s.str.contains("C")
+    ) / s.str.len()
+    return df.iloc[:, 1:]
+```
+
+### 基于lightgbm的baseline
+在得到了表格数据之后，我们可以使用任意适用于表格数据的机器学习回归模型来进行预测，此处我们简单使用了lightgbm模型：
+
+```python
+train_data = lgb.Dataset(X_train, label=y_train)
+test_data = lgb.Dataset(X_test, label=y_test, reference=train_data)
+
+def print_validation_result(env):
+    result = env.evaluation_result_list[-1]
+    print(f"[{env.iteration}] {result[1]}'s {result[0]}: {result[2]}")
+
+params = {
+    "boosting_type": "gbdt",
+    "objective": "regression",
+    "metric": "root_mean_squared_error",
+    "max_depth": 7,
+    "learning_rate": 0.02,
+    "verbose": 0,
+}
+
+gbm = lgb.train(
+    params,
+    train_data,
+    num_boost_round=15000,
+    valid_sets=[test_data],
+    callbacks=[print_validation_result],
+)
+```
+可一键运行的完整baseline见下
 
 </details>
