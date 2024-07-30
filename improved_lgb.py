@@ -3,9 +3,15 @@ from sklearn.model_selection import GridSearchCV, train_test_split
 from sklearn.metrics import mean_squared_error
 import pandas as pd
 import numpy as np
+from xgboost import XGBRegressor
+from sklearn.ensemble import RandomForestRegressor, VotingRegressor
 
 # 加载数据
 # 假设 data 是包含特征和标签的 DataFrame
+# 这里需要你加载数据并将其赋值给变量 data
+# data = pd.read_csv('path_to_your_data.csv')  # 示例
+
+# 提取特征和标签
 X = data.drop(columns=['label'])
 y = data['label']
 
@@ -60,14 +66,12 @@ rmse = mean_squared_error(y_test, y_pred, squared=False)
 print(f"Test RMSE: {rmse}")
 
 # 结果保存
+# 这里需要你提供测试集的ID列并将其赋值给变量 test_ids
+# test_ids = X_test['id']  # 示例
 df_submit = pd.DataFrame({'id': test_ids, 'mRNA_remaining_pct': y_pred})
 df_submit.to_csv("submission.csv", index=False)
 
-# 集成学习 (可选)
-from sklearn.ensemble import VotingRegressor
-from xgboost import XGBRegressor
-from sklearn.ensemble import RandomForestRegressor
-
+# 集成学习
 # 定义不同的回归模型
 xgb_model = XGBRegressor()
 rf_model = RandomForestRegressor()
