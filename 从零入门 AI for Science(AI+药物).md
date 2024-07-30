@@ -84,6 +84,7 @@
 
 <details open>
   <summary><b>Task2：深入理解赛题，入门RNN和特征工程</b></summary>
+  <br>
   
   **我在官方给出的lgb.ipynb基础上，改进后的算法见[improved_lgb.py](https://github.com/CYC7b/Datawhale/blob/main/improved_lgb.py)**
   
