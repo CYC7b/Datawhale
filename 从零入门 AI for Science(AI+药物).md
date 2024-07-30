@@ -86,6 +86,7 @@
   <summary>Task2：深入理解赛题，入门RNN和特征工程</summary>
 
   我在官方给出的lgb.ipynb基础上，改进后的算法见improved_lgb.py
+  
   本任务我们对官方的baseline进行分析解读，之后介绍RNN相关的基础知识，包括其适用范围和问题。随后，我们从特征工程构建的角度来重新分析赛题数据，并将其和lightgbm结合，最终给出一个更好的baseline。
 
   ### 官方baseline分析
