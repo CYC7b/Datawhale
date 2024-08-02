@@ -82,7 +82,7 @@
 
 </details>
 
-<details open>
+<details>
   <summary><b>Task2：深入理解赛题，入门RNN和特征工程</b></summary>
   <br>
   
@@ -349,5 +349,12 @@ gbm = lgb.train(
 )
 ```
 可一键运行的完整baseline见lgb.ipynb
+
+</details>
+
+<details open>
+  <summary><b>Task3：特征工程进阶，持续上分</b></summary>
+
+  
 
 </details>
