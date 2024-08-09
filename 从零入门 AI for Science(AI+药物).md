@@ -1,10 +1,10 @@
-# Datawhale AI 夏令营-siRNA药物药效预测
+# Datawhale X 魔搭 AI夏令营 - 可图Kolors-LoRA风格故事挑战赛
 
-学习者手册:[https://exn8g66dnwu.feishu.cn/docx/T7WGd7goqowRvFxwoApclo9Pn0b](https://linklearner.com/activity/12/4/4)
+学习者手册:https://linklearner.com/activity/14/10/24
 
-赛事地址:http://competition.sais.com.cn/competitionDetail/532230/competitionData
+赛事地址:[http://competition.sais.com.cn/competitionDetail/532230/competitionData](https://tianchi.aliyun.com/competition/entrance/532254/information)
 
-数据集下载:https://github.com/CYC7b/Datawhale/blob/main/siRNA_0715.zip
+数据集下载:[https://github.com/CYC7b/Datawhale/blob/main/siRNA_0715.zip](https://tianchi.aliyun.com/competition/entrance/532254/information)
 
 <details>
   <summary><b>Task1：赛题解析&背景入门</b></summary>
