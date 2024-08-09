@@ -56,7 +56,7 @@ print(score)
 
   ## 2. 30分钟速通指南
 
-1. 下载baseline文件
+1. 下载baseline文件[https://github.com/CYC7b/Datawhale/blob/Datawhale%E7%AC%AC%E5%9B%9B%E6%9C%9F/baseline.ipynb]
   ```python
 git lfs install
 git clone https://www.modelscope.cn/datasets/maochase/kolors.git
