@@ -7,10 +7,11 @@
 数据集下载:[https://github.com/CYC7b/Datawhale/blob/main/siRNA_0715.zip](https://tianchi.aliyun.com/competition/entrance/532254/information)
 
 <details>
-  <summary><b>Task1：赛题解析&背景入门</b></summary>
+  <summary><b>Task1：赛题解析&运行</b></summary>
 
   ### 1. 赛题介绍
-  本次比赛旨在利用机器学习技术，预测化学修饰后的siRNA序列在RNA干扰（RNAi）机制下对靶基因的沉默效率。RNAi是一种重要的基因表达调控机制，通过干扰特定基因的表达，可以用于疾病治疗。这次比赛的目标是通过构建并优化模型，准确预测siRNA的沉默效率，从而提升药物设计的效率和效果。
+
+  **赛事链接：**https://tianchi.aliyun.com/s/ce4dc8bf800db1e58d51263ff357d28f
 
   **比赛流程**
   - 初赛阶段：提供一部分公开文献中提取的siRNA修饰序列和实验数据，参赛者需要使用这些数据训练模型并提交预测结果。初赛的重点是评估在训练集中出现过的目标mRNA序列，不同siRNA的沉默效率预测的准确性。
