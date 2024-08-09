@@ -4,7 +4,7 @@
 
 赛事地址:[http://competition.sais.com.cn/competitionDetail/532230/competitionData](https://tianchi.aliyun.com/competition/entrance/532254/information)
 
-数据集下载:[https://github.com/CYC7b/Datawhale/blob/main/siRNA_0715.zip](https://tianchi.aliyun.com/competition/entrance/532254/information)
+数据集下载:[http://competition.sais.com.cn/competitionDetail/532230/competitionData](https://tianchi.aliyun.com/competition/entrance/532254/information)
 
 <details open>
   <summary><b>Task1：赛题解析&运行</b></summary>
