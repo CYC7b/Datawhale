@@ -87,7 +87,7 @@ git clone https://www.modelscope.cn/datasets/maochase/kolors.git
 </details>
 
 <details open>
-  <summary><b>Task1：精读baseline&实战基于话剧的连环画制作</b></summary>
+  <summary><b>Task2：精读baseline&实战基于话剧的连环画制作</b></summary>
   
   ## 1. baseline精读
    
