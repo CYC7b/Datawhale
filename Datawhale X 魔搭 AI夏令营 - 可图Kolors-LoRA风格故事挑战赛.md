@@ -164,4 +164,4 @@ git clone https://www.modelscope.cn/datasets/maochase/kolors.git
 
   打开baseline，替换原来的提示词。重新运行baseline，只需要从加载模型开始往下执行代码块即可。
 
-<details>
+</details>
