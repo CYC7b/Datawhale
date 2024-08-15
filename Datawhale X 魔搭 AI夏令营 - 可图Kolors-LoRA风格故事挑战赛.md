@@ -86,7 +86,7 @@ git clone https://www.modelscope.cn/datasets/maochase/kolors.git
 
 </details>
 
-<details open>
+<details>
   <summary><b>Task2：精读baseline&实战基于话剧的连环画制作</b></summary>
   
   ## 1. baseline精读
@@ -165,3 +165,9 @@ git clone https://www.modelscope.cn/datasets/maochase/kolors.git
   打开baseline，替换原来的提示词。重新运行baseline，只需要从加载模型开始往下执行代码块即可。
 
 </details>
+
+<details open>
+  <summary><b>Task3：进阶上分-实战优化</b></summary>
+
+
+  
