@@ -169,5 +169,152 @@ git clone https://www.modelscope.cn/datasets/maochase/kolors.git
 <details open>
   <summary><b>Task3：进阶上分-实战优化</b></summary>
 
+  ## 1. 工具初探一ComfyUI应用场景探索
+  ComfyUI 是一个为生成对抗网络（GAN）和扩散模型设计的用户界面工具。它主要用于帮助用户在不需要编写复杂代码的情况下，直观地设计和操作机器学习模型，尤其是在图像生成和编辑领域。ComfyUI 提供了一种图形化的方式，用户可以通过拖放操作将不同的模型组件（如生成器、判别器、损失函数等）连接在一起，从而快速构建和实验不同的网络结构。
+
+  #### 1.1 主要功能和特点
+  
+  图形化用户界面：ComfyUI 提供了一个友好的图形界面，用户可以通过拖放操作构建模型，而不必编写复杂的代码。
+  
+  模块化设计：它允许用户将模型设计成模块，每个模块代表模型的一部分（如层、激活函数、优化器等），用户可以自由组合这些模块。
+  
+  实时预览：在调整模型参数或结构后，用户可以立即看到生成结果，这有助于快速迭代和优化模型。
+  
+  支持多种模型架构：ComfyUI 支持各种流行的图像生成模型，如 GAN 和扩散模型等。
+
+  #### 1.2 ComfyUI图片生成流程（以扩散模型为例）：
+
+  1. 设置输入节点
+
+    首先，用户需要在界面上添加输入节点。输入节点通常包括以下几种：
+  
+  - 噪声输入节点：用于生成随机噪声图像，作为扩散模型的初始输入。
+  - 条件输入节点：如果你使用的是条件生成模型，例如基于文本的图像生成，输入节点将接收文本描述或其他条件信息。
+  
+  2. 选择和配置模型节点
+  
+    接下来，需要选择用于图像生成的模型节点。ComfyUI 支持多种模型架构，例如：
+  
+  - 生成模型节点（UNet、VAE 等）：这是核心部分，用于从输入噪声或条件中生成图像。
+  - 预训练模型加载节点：加载你所需的预训练模型权重，这些模型会用于指导图像生成过程。
+  
+  3. 配置扩散流程节点
+  
+    在扩散模型的生成过程中，通常需要配置扩散流程相关的节点：
+  
+  - 扩散步数节点：设置扩散过程中的步数，步数越多，生成的图像细节越多，但生成时间也会增加。
+  - 调度器节点：定义扩散过程中的时间步调度策略，如线性或指数调度器。
+  
+  4. 连接处理单元
+  
+    图像生成过程中可能还需要一些图像处理单元节点：
+  
+  - 图像后处理节点：用于图像生成后的处理，如裁剪、调整大小、颜色校正等。
+  - 输出格式节点：设置生成图像的输出格式，如 PNG、JPEG 等。
+  
+  5. 配置输出节点
+  
+    最后，添加输出节点，用于保存或显示生成的图像：
+
+  - 图像输出节点：将生成的图像保存到本地文件系统中，或直接在界面中显示。
+  - 日志节点：记录生成过程中的信息，便于调试或记录生成结果。
+  
+  6. 执行生成流程
+  
+    配置完成后，用户可以运行整个数据流。ComfyUI 会自动执行连接的各个节点，逐步生成并输出图像。执行过程中，用户可以实时监控生成的中间结果和最终图像。
+
+
+  **简单概括为如下流程：**
+  
+  噪声输入节点 -> 2. 生成模型节点 -> 3. 扩散步数节点 -> 4. 图像后处理节点 -> 5. 图像输出节点
+
+  #### 1.3 20分钟速通安装ComfyUI
+
+  下载安装ComfyUI的执行文件和task1中微调完成Lora文件
+  ```
+git lfs install
+git clone https://www.modelscope.cn/datasets/maochase/kolors_test_comfyui.git
+mv kolors_test_comfyui/* ./
+rm -rf kolors_test_comfyui/
+mkdir -p /mnt/workspace/models/lightning_logs/version_0/checkpoints/
+mv epoch=0-step=500.ckpt /mnt/workspace/models/lightning_logs/version_0/checkpoints/   
+  ```
+
+  运行ComfyUI.ipynb。当执行到最后一个节点的内容输出了一个访问的链接的时候，复制链接到浏览器中访问。即可进入ComfyUI界面。
+
+  加载工作流脚本，并完成第一次生图。
+
+  可以替换工作流脚本，使用Task1中微调得到的Lora模型。
+
+
+  ## 2. Lora微调
+
+  #### 2.1 Lora简介
+  LoRA (Low-Rank Adaptation) 微调是一种用于在预训练模型上进行高效微调的技术。它可以通过高效且灵活的方式实现模型的个性化调整，使其能够适应特定的任务或领域，同时保持良好的泛化能力和较低的资源消耗。这对于推动大规模预训练模型的实际应用至关重要。
+
+  #### 2.2 Lora微调的原理
+  LoRA通过在预训练模型的关键层中添加低秩矩阵来实现。这些低秩矩阵通常被设计成具有较低维度的参数空间，这样它们就可以在不改变模型整体结构的情况下进行微调。在训练过程中，只有这些新增的低秩矩阵被更新，而原始模型的大部分权重保持不变。
+
+  #### 2.3 Lora微调的优势
+  节省资源：LoRA 微调通过更新少量参数，显著降低了计算资源需求和显存占用。
+
+  灵活性高：LoRA 可以快速适应不同任务，微调后的模型易于共享和迁移。
+
+  降低过拟合风险：低秩分解减少模型自由度，帮助模型保持更好的泛化能力。
+
+  #### 2.4 Lora详解
+
+  Task1中的微调代码：
+
+  ```python
+  import os
+  cmd = """
+  python DiffSynth-Studio/examples/train/kolors/train_kolors_lora.py \ # 选择使用可图的Lora训练脚本DiffSynth-Studio/examples/train/kolors/train_kolors_lora.py
+    --pretrained_unet_path models/kolors/Kolors/unet/diffusion_pytorch_model.safetensors \ # 选择unet模型
+    --pretrained_text_encoder_path models/kolors/Kolors/text_encoder \ # 选择text_encoder
+    --pretrained_fp16_vae_path models/sdxl-vae-fp16-fix/diffusion_pytorch_model.safetensors \ # 选择vae模型
+    --lora_rank 16 \ # lora_rank 16 表示在权衡模型表达能力和训练效率时，选择了使用 16 作为秩，适合在不显著降低模型性能的前提下，通过 LoRA 减少计算和内存的需求
+    --lora_alpha 4.0 \ # 设置 LoRA 的 alpha 值，影响调整的强度
+    --dataset_path data/lora_dataset_processed \ # 指定数据集路径，用于训练模型
+    --output_path ./models \ # 指定输出路径，用于保存模型
+    --max_epochs 1 \ # 设置最大训练轮数为 1
+    --center_crop \ # 启用中心裁剪，这通常用于图像预处理
+    --use_gradient_checkpointing \ # 启用梯度检查点技术，以节省内存
+    --precision "16-mixed" # 指定训练时的精度为混合 16 位精度（half precision），这可以加速训练并减少显存使用
+  """.strip()
+  os.system(cmd) # 执行可图Lora训练
+  ```
+
+  #### 2.5 如何改进微调代码
+
+  1.优化超参数
+  
+  学习率调整：尝试使用学习率调度器（如 CosineAnnealingLR 或 ReduceLROnPlateau），以便动态调整学习率，提升模型的收敛速度和效果。
+  
+  批大小调整：适当调整批大小，平衡内存占用与训练速度。如果可能，使用渐进式批量增大策略。
+  
+  2. 增加数据增强
+  
+  对输入数据进行更多的增强操作（如随机裁剪、旋转、颜色抖动等），以提高模型的泛化能力，防止过拟合。
+  
+  3. 改进模型架构
+  
+  多任务微调：如果有多个相关任务，可以考虑多任务学习，通过共享部分模型参数来提升各任务的性能。
+  
+  更复杂的LoRA层：在 LoRA 微调中，尝试在更多模型层中应用 LoRA，或者针对特定任务调整 LoRA 的目标模块。
+  
+  4. 使用更高效的优化器
+  
+  尝试使用 AdamW 或 Lion 等更先进的优化器，它们在某些情况下可以比传统的 Adam 提供更好的性能和稳定性。
+  
+  5. 添加早停机制
+  
+  实现早停（Early Stopping）机制，根据验证集性能动态停止训练，避免模型过拟合。
+  
+  6. 调整精度
+  
+  如果适合，可以尝试使用混合精度训练（FP16 和 FP32），以加快训练速度并减少显存使用，同时保持数值稳定性。
 
   
+  
+    
