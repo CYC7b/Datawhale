@@ -315,6 +315,9 @@ mv epoch=0-step=500.ckpt /mnt/workspace/models/lightning_logs/version_0/checkpoi
   
   如果适合，可以尝试使用混合精度训练（FP16 和 FP32），以加快训练速度并减少显存使用，同时保持数值稳定性。
 
+
+</details>
+
   
   
     
